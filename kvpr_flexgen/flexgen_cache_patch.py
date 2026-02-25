@@ -136,6 +136,7 @@ class FlexGenSplitStaticCache(StaticCache):
 
             if cpu_mask.any():
                 cpu_pos = cache_position[cpu_mask] - self.gpu_cache_len
+                cpu_pos = cpu_pos.to(self.offload_device)
                 k_cpu = key_states.index_select(2, cache_position[cpu_mask]).to(self.offload_device)
                 v_cpu = value_states.index_select(2, cache_position[cpu_mask]).to(self.offload_device)
                 self.cpu_key_cache[layer_idx].index_copy_(2, cpu_pos, k_cpu)

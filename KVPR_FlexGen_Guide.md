@@ -114,7 +114,7 @@ These are simple, deterministic heuristics you can refine with paper-specific fo
 - FlexGen split length:
   - `flexgen_split_len_ratio`: picks `gpu_cache_len = total_len * gpu_ratio`.
   - `flexgen_split_len_by_gpu_mem`: computes maximum GPU-resident KV length given a KV memory budget.
-    - Per-token KV bytes = `2 * num_kv_heads * head_dim * bytes_per_elem * batch_size`.
+    - Per-token KV bytes = `2 * num_kv_heads * head_dim * bytes_per_elem * batch_size * num_layers`.
     - Available KV bytes = `gpu_mem_bytes - model_weights_bytes - reserve_bytes`.
     - `gpu_cache_len = floor(available_bytes / per_token_bytes)` with a safety factor.
 

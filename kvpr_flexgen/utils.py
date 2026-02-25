@@ -92,6 +92,7 @@ def flexgen_split_len_by_gpu_mem(
     gpu_mem_bytes: int,
     num_kv_heads: int,
     head_dim: int,
+    num_layers: int,
     model_weights_bytes: int = 0,
     reserve_bytes: int = 0,
     bytes_per_elem: int = 2,
@@ -101,7 +102,9 @@ def flexgen_split_len_by_gpu_mem(
     available_bytes = gpu_mem_bytes - model_weights_bytes - reserve_bytes
     if available_bytes < 0:
         return 0
-    per_token_bytes = kv_per_token_bytes(num_kv_heads, head_dim, bytes_per_elem) * batch_size
+    per_token_bytes = (
+        kv_per_token_bytes(num_kv_heads, head_dim, bytes_per_elem) * batch_size * max(1, num_layers)
+    )
     if per_token_bytes <= 0:
         return 0
     max_tokens = int((available_bytes * safety) // per_token_bytes)

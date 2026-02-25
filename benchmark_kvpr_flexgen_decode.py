@@ -59,6 +59,13 @@ def _apply_attention_patch(method):
         apply_flexgen_llama_attention_patch()
 
 
+def _apply_flash_staticcache_patch_if_needed(method, attn_implementation):
+    if method == "offloaded" and attn_implementation == "flash_attention_2":
+        from kvpr_flexgen.flash_staticcache_patch_llama import apply_flash_staticcache_patch_llama
+
+        apply_flash_staticcache_patch_llama()
+
+
 def _sync(device):
     if device.type == "cuda":
         torch.cuda.synchronize(device)
@@ -87,6 +94,7 @@ def main():
 
     _set_seed(args.seed)
     _apply_attention_patch(args.method)
+    _apply_flash_staticcache_patch_if_needed(args.method, args.attn_implementation)
 
     from transformers import AutoModelForCausalLM
 
@@ -154,6 +162,7 @@ def main():
                 gpu_mem_bytes=args.gpu_mem_bytes,
                 num_kv_heads=model.config.num_key_value_heads or model.config.num_attention_heads,
                 head_dim=getattr(model.config, "head_dim", model.config.hidden_size // model.config.num_attention_heads),
+                num_layers=model.config.num_hidden_layers,
                 model_weights_bytes=args.model_weights_bytes or 0,
                 reserve_bytes=args.reserve_bytes,
                 bytes_per_elem=2 if model.dtype == torch.float16 else 4,

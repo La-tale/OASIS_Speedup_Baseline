@@ -126,19 +126,22 @@ class FlexGenSplitStaticCache(StaticCache):
         if cache_position is not None:
             gpu_mask = cache_position < self.gpu_cache_len
             cpu_mask = ~gpu_mask
+            source_pos = torch.arange(cache_position.shape[0], device=cache_position.device)
 
             if gpu_mask.any():
                 gpu_pos = cache_position[gpu_mask]
-                k_gpu = key_states.index_select(2, gpu_pos)
-                v_gpu = value_states.index_select(2, gpu_pos)
+                src_gpu = source_pos[gpu_mask]
+                k_gpu = key_states.index_select(2, src_gpu)
+                v_gpu = value_states.index_select(2, src_gpu)
                 self.gpu_key_cache[layer_idx].index_copy_(2, gpu_pos, k_gpu)
                 self.gpu_value_cache[layer_idx].index_copy_(2, gpu_pos, v_gpu)
 
             if cpu_mask.any():
                 cpu_pos = cache_position[cpu_mask] - self.gpu_cache_len
                 cpu_pos = cpu_pos.to(self.offload_device)
-                k_cpu = key_states.index_select(2, cache_position[cpu_mask]).to(self.offload_device)
-                v_cpu = value_states.index_select(2, cache_position[cpu_mask]).to(self.offload_device)
+                src_cpu = source_pos[cpu_mask]
+                k_cpu = key_states.index_select(2, src_cpu).to(self.offload_device)
+                v_cpu = value_states.index_select(2, src_cpu).to(self.offload_device)
                 self.cpu_key_cache[layer_idx].index_copy_(2, cpu_pos, k_cpu)
                 self.cpu_value_cache[layer_idx].index_copy_(2, cpu_pos, v_cpu)
 

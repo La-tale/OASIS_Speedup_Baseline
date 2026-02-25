@@ -85,9 +85,11 @@ def main():
     parser.add_argument("--gpu-mem-bytes", type=int, default=None)
     parser.add_argument("--model-weights-bytes", type=int, default=None)
     parser.add_argument("--reserve-bytes", type=int, default=0)
+    parser.add_argument("--activation-multiplier", type=float, default=1.0)
+    parser.add_argument("--ffn-multiplier", type=float, default=None)
     parser.add_argument("--dtype", type=str, choices=["fp16", "bf16", "fp32"], default="fp16")
     parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--attn-implementation", type=str, default="sdpa")
+    parser.add_argument("--attn-implementation", type=str, default="flash_attention_2")
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save-result", type=str, default=None)
@@ -164,6 +166,13 @@ def main():
                 num_kv_heads=model.config.num_key_value_heads or model.config.num_attention_heads,
                 head_dim=getattr(model.config, "head_dim", model.config.hidden_size // model.config.num_attention_heads),
                 num_layers=model.config.num_hidden_layers,
+                hidden_size=model.config.hidden_size,
+                activation_multiplier=args.activation_multiplier,
+                ffn_multiplier=(
+                    args.ffn_multiplier
+                    if args.ffn_multiplier is not None
+                    else (model.config.intermediate_size / model.config.hidden_size - 1.0)
+                ),
                 model_weights_bytes=args.model_weights_bytes or 0,
                 reserve_bytes=args.reserve_bytes,
                 bytes_per_elem=2 if model.dtype == torch.float16 else 4,
@@ -173,6 +182,12 @@ def main():
                 "gpu_mem_bytes": args.gpu_mem_bytes,
                 "model_weights_bytes": args.model_weights_bytes or 0,
                 "reserve_bytes": args.reserve_bytes,
+                "activation_multiplier": args.activation_multiplier,
+                "ffn_multiplier": (
+                    args.ffn_multiplier
+                    if args.ffn_multiplier is not None
+                    else (model.config.intermediate_size / model.config.hidden_size - 1.0)
+                ),
                 "gpu_cache_len": args.gpu_cache_len,
             }
 

@@ -71,6 +71,7 @@ def main():
         "gemm_shape": [args.m, args.n, args.k],
         "gemm_iters": args.gemm_iters,
         "device": str(device),
+        "gpu_name": torch.cuda.get_device_name(device),
     }
 
     out_path = Path(args.out)

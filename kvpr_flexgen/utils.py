@@ -16,7 +16,7 @@ class KVPRHeuristicParams:
     head_dim: int = 128
     num_kv_heads: int = 32
     # Safety factor to avoid overly aggressive recompute
-    safety: float = 0.9
+    safety: float = 0.6
 
 
 def kv_per_token_bytes(num_kv_heads: int, head_dim: int, bytes_per_elem: int) -> int:
@@ -93,13 +93,25 @@ def flexgen_split_len_by_gpu_mem(
     num_kv_heads: int,
     head_dim: int,
     num_layers: int,
+    hidden_size: int,
+    activation_multiplier: float = 1.0,
+    ffn_multiplier: float = 0.0,
     model_weights_bytes: int = 0,
     reserve_bytes: int = 0,
     bytes_per_elem: int = 2,
-    safety: float = 0.9,
+    safety: float = 0.6,
 ) -> int:
     """Compute GPU-resident KV length given a GPU memory budget for KV."""
-    available_bytes = gpu_mem_bytes - model_weights_bytes - reserve_bytes
+    activation_bytes = int(
+        max(0, total_len)
+        * batch_size
+        * max(1, hidden_size)
+        * bytes_per_elem
+        * max(1, num_layers)
+        * max(0.0, activation_multiplier)
+        * max(1.0, 1.0 + ffn_multiplier)
+    )
+    available_bytes = gpu_mem_bytes - model_weights_bytes - reserve_bytes - activation_bytes
     if available_bytes < 0:
         return 0
     per_token_bytes = (

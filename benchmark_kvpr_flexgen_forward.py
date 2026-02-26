@@ -79,6 +79,7 @@ def main():
     parser.add_argument("--gen-len", type=int, default=32)
     parser.add_argument("--method", type=str, choices=["baseline", "offloaded", "kvpr", "flexgen"], default="offloaded")
     parser.add_argument("--recompute-len", type=int, default=0)
+    parser.add_argument("--recompute-ratio", type=float, default=None)
     parser.add_argument("--gpu-cache-len", type=int, default=None)
     parser.add_argument("--gpu-cache-ratio", type=float, default=None)
     parser.add_argument("--use-heuristics", action="store_true")
@@ -135,7 +136,11 @@ def main():
 
     input_ids = torch.randint(0, vocab_size, (batch_size, prompt_len), device=device, dtype=torch.long)
 
-    recompute_len = min(args.recompute_len, prompt_len)
+    if args.recompute_ratio is not None:
+        recompute_len = int(max_cache_len * args.recompute_ratio)
+    else:
+        recompute_len = args.recompute_len
+    recompute_len = min(recompute_len, prompt_len)
     heuristics_used = {}
     if args.use_heuristics:
         from kvpr_flexgen import utils as kv_utils
